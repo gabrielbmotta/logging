@@ -2,6 +2,8 @@
 #include "logger.hpp"
 #include <fstream>
 #include <chrono>
+#include <tuple>
+#include <vector>
 
 void test(){
   DEBUG << "This is a debug level output\n";
@@ -21,6 +23,25 @@ void test2(){
   std::cout << "This is a critical level output\n";
 }
 
+std::pair<int,int> speedTest(){
+  auto start1 = std::chrono::steady_clock::now();
+
+  for(int i = 0; i < 1000; ++i){
+    test2();
+  }
+  auto end1 = std::chrono::steady_clock::now();
+
+  auto start2 = std::chrono::steady_clock::now();
+
+  for(int i = 0; i < 1000; ++i){
+    test();
+  }
+
+  auto end2 = std::chrono::steady_clock::now();
+
+  return {std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count(),
+          std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count()};
+};
 
 
 class MyCustomLoggerSink : public LogSink{
@@ -44,29 +65,28 @@ int main()
     item->setOutputLevel(LogLevel::Debug);
   }
 
-  auto start1 = std::chrono::steady_clock::now();
+  int numTrials = 200;
 
-  for(int i = 0; i < 1000; ++i){
-    test2();
-  }
-  auto end1 = std::chrono::steady_clock::now();
+  std::vector<std::pair<int,int>> results;
+  results.reserve(numTrials);
 
-  auto start2 = std::chrono::steady_clock::now();
-
-  for(int i = 0; i < 1000; ++i){
-    test();
+  for(int i = 0; i < numTrials; ++i){
+    results.emplace_back(speedTest());
   }
 
-  auto end2 = std::chrono::steady_clock::now();
+  int avgCout = 0, avgLog = 0;
 
-  std::cout << "Ouput time with cout.\n";
-  std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count() << "ms\n";
+  for(auto& result : results){
+    avgCout += result.first;
+    avgLog += result.second;
+  }
 
-  std::cout << "Output time with logging.\n";
-  std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count() << "ms\n";
+  avgCout /= numTrials;
+  avgLog /= numTrials;
 
 
-  std::cout << "The test times vary considerably from run to run. Do not treat the results of one run as gospel.\n";
+  std::cout << "Avg cout time: " << avgCout << "\n";
+  std::cout << "Avg log time: " << avgLog << "\n";
 
 //
 //  LogManager::debugInfo = false;
