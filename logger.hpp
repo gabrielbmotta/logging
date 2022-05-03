@@ -113,7 +113,7 @@ LogManager& operator<<(LogManager& logger, const T& val) {
 
   for(auto* sink : logger.logSinks){
     if(sink->getOutputLevel() <= logger.logLevel){
-      sink->printer() << val;
+      sink->printer() << val << std::flush;
     }
   }
   return logger;
